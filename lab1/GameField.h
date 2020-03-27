@@ -12,10 +12,10 @@ public:
 
 	int getWidth();
 	int getHeight();
-	std::vector<int>& getBallsPositions();
+	char** getBallsPositions();
 	State* getState() const;
 
-	void setBallsPositions(std::vector<int> ballsPositions);
+	void setBallsPositions(char** ballsPositions);
 	void setGameQuadCells(GameQuadCells gqc);
 	void turnBalls();
 	void moveGameQuad(Direction dir);

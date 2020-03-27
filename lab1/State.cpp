@@ -1,4 +1,5 @@
 #include "State.h"
+int State::iterationsCount = 0;
 bool State::Search(std::vector<State*>& v, State* what)
 {
 	for (auto i : v)
@@ -20,6 +21,14 @@ bool State::Repeats(std::vector<State*>& v)
 		}
 	}
 	return false;
+}
+
+void State::setParent(State* state)
+{
+	if (state != nullptr)
+		parent = new State(*state);
+	else
+		parent = nullptr;
 }
 
 void State::setGx(int gx)
@@ -75,97 +84,128 @@ State* State::getParent() const
 	return parent;
 }
 
-State::State(std::vector<int> ballsPositions, int gx, GameQuadCells gameQuadCells)
+State::State(char** ballsPositions, int gx, GameQuadCells gameQuadCells)
 {
-	for (auto i : ballsPositions)
+	this->ballsPositions = new char* [5];
+	for (size_t i = 0; i < 5; i++)
 	{
-		this->ballsPositions.push_back(i);
-	}	
+		this->ballsPositions[i] = new char[5];
+	}
+	for (size_t i = 0; i < 5; i++)
+	{
+		for (size_t j = 0; j < 5; j++)
+		{
+			this->ballsPositions[i][j] = ballsPositions[i][j];
+		}
+	}
 	this->gx = gx;
 	this->gameQuadCells = gameQuadCells;
-	std::sort(this->ballsPositions.begin(), this->ballsPositions.end());
 }
+
+//State::State(std::vector<int> ballsPositions, int gx, GameQuadCells gameQuadCells)z
+//{
+//	for (auto i : ballsPositions)
+//	{
+//		this->ballsPositions.push_back(i);
+//	}	
+//	this->gx = gx;
+//	this->gameQuadCells = gameQuadCells;
+//	std::sort(this->ballsPositions.begin(), this->ballsPositions.end());
+//}
 
 State::State(const State& state)
 {
-	for (size_t i = 0; i < state.ballsPositions.size(); i++)
+	if (ballsPositions == nullptr)
 	{
-		this->ballsPositions.push_back(state.ballsPositions[i]);
+		ballsPositions = new char* [5];
+		for (size_t i = 0; i < 5; i++)
+		{
+			ballsPositions[i] = new char[5];
+		}
+	}
+	for (size_t i = 0; i < 5; i++)
+	{
+		for (size_t j = 0; j < 5; j++)
+		{
+			this->ballsPositions[i][j] = state.ballsPositions[i][j];
+		}
 	}
 	this->gx = state.gx;
 	this->fx = state.fx;
 	this->hx = state.hx;
-	this->gameQuadCells = state.gameQuadCells;
-	std::sort(this->ballsPositions.begin(), this->ballsPositions.end());
+	this->gameQuadCells = state.gameQuadCells;	
 }
 State& State::operator=(const State& state)
 {
-	if (&state == this)
+	if (state == *this)
 		return *this;
 
-	for (size_t i = 0; i < state.ballsPositions.size(); i++)
+	if (ballsPositions == nullptr)
 	{
-		this->ballsPositions.push_back(state.ballsPositions[i]);
+		ballsPositions = new char* [5];
+		for (size_t i = 0; i < 5; i++)
+		{
+			ballsPositions[i] = new char[5];
+		}
+	}
+	for (size_t i = 0; i < 5; i++)
+	{
+		for (size_t j = 0; j < 5; j++)
+		{
+			this->ballsPositions[i][j] = state.ballsPositions[i][j];
+		}
 	}
 	this->gx = state.gx;
 	this->hx = state.hx;
 	this->fx = state.fx;
-	this->gameQuadCells = state.gameQuadCells;
-	std::sort(this->ballsPositions.begin(), this->ballsPositions.end());
+	this->gameQuadCells = state.gameQuadCells;	
 	return *this;
 }
 
-std::vector<int>& State::getBallsPositions()
+char** State::getBallsPositions()
 {
 	return ballsPositions;
 }
 
 void State::Expand(std::vector<State*>& O, std::vector<State*>& C, State* targetState, HeuristicFunctionPtr hfPtr)
 {
+	iterationsCount++;
 	/*std::cout << this << std::endl;*/
 	int verticalPos = 0, horizontalPos = 0;
-	int c1 = verticalPos * 5 + horizontalPos;
-	int c2 = verticalPos * 5 + horizontalPos + 1;
-	int c3 = (verticalPos + 1) * 5 + horizontalPos;
-	int c4 = (verticalPos + 1) * 5 + horizontalPos + 1;
+	char c1, c2, c3, c4;
 	for (verticalPos = 0; verticalPos < 4; verticalPos++)
 	{
 		
 		for (horizontalPos = 0;  horizontalPos < 4; horizontalPos++)
 		{			
-			c1 = verticalPos * 5 + horizontalPos;
-			c2 = verticalPos * 5 + horizontalPos + 1;
-			c3 = (verticalPos + 1) * 5 + horizontalPos;
-			c4 = (verticalPos + 1) * 5 + horizontalPos + 1;
+			c1 = ballsPositions[verticalPos % 5][horizontalPos % 5];
+			c2 = ballsPositions[verticalPos % 5][horizontalPos % 5 + 1];
+			c3 = ballsPositions[verticalPos % 5 + 1][horizontalPos % 5];
+			c4 = ballsPositions[verticalPos % 5 + 1][horizontalPos % 5 + 1];
+
+			int a = c1 + c2 + c3 + c4;
+			if (a == 48 * 4 || a == 49 * 4)
+				continue;
+
 			State* state = new State(ballsPositions);
-			for (size_t i = 0; i < state->ballsPositions.size(); i++)
-			{			
-				if (state->ballsPositions[i] == c1) {
-					state->ballsPositions[i]++;
-					continue;
-				}
-				if (state->ballsPositions[i] == c2) {
-					state->ballsPositions[i] += 5;
-					continue;
-				}
-				if (state->ballsPositions[i] == c3) {
-					state->ballsPositions[i] -= 5;
-					continue;
-				}
-				if (state->ballsPositions[i] == c4) {
-					state->ballsPositions[i]--;
-					continue;
-				}
-			}	
-			state->setGameQuadCellsNumber(GameQuadCells(c1, c2, c3, c4));
-			std::sort(state->ballsPositions.begin(), state->ballsPositions.end());
+			//c2 = c1
+			state->ballsPositions[verticalPos % 5][horizontalPos % 5 + 1] = c1;
+			//c4 = c2
+			state->ballsPositions[verticalPos % 5 + 1][horizontalPos % 5 + 1] = c2;
+			//c1 = c3
+			state->ballsPositions[verticalPos % 5][horizontalPos % 5] = c3;
+			//c3 = c4			
+			state->ballsPositions[verticalPos % 5 + 1][horizontalPos % 5] = c4;
+			/*std::cout << "Child" << std::endl << *state<< std::endl;		*/						
 			state->setGx(this->getGx() + 1);
 			state->setHx(hfPtr(state, targetState));
 			float Fx = CalculateFx(state->getGx(),state->getHx());	
 			state->setFx(Fx);
 			if ((Search(O, state) == false) && (Search(C, state) == false))
 			{																		
-				state->parent = this;		
+				state->parent = this;	
+				GameQuadCells gqc(verticalPos * 5 + horizontalPos, verticalPos * 5 + horizontalPos + 1, (verticalPos + 1) * 5 + horizontalPos, (verticalPos + 1) * 5 + horizontalPos + 1);
+				state->setGameQuadCellsNumber(gqc);
 				O.push_back(state);								
 			}			
 			else if (Search(O,state) == true)
@@ -173,9 +213,11 @@ void State::Expand(std::vector<State*>& O, std::vector<State*>& C, State* target
 				auto tmp = *(getIterator(O, state));
 				if (Fx < tmp->getFx())
 				{					
+					GameQuadCells gqc(verticalPos * 5 + horizontalPos, verticalPos * 5 + horizontalPos + 1, (verticalPos + 1) * 5 + horizontalPos, (verticalPos + 1) * 5 + horizontalPos + 1);
 					tmp->setFx(Fx);
 					tmp->setGx(state->getGx());
 					tmp->setHx(state->getHx());
+					tmp->setGameQuadCellsNumber(gqc);
 					tmp->parent = this;
 				}                
 				delete state;
@@ -186,9 +228,11 @@ void State::Expand(std::vector<State*>& O, std::vector<State*>& C, State* target
 				auto tmp = *it;
 				if (Fx < tmp->getFx())
 				{
-					std::cout << Fx << std::endl;
+					GameQuadCells gqc(verticalPos * 5 + horizontalPos, verticalPos * 5 + horizontalPos + 1, (verticalPos + 1) * 5 + horizontalPos, (verticalPos + 1) * 5 + horizontalPos + 1);
+					/*std::cout << Fx << std::endl;*/
 					tmp->setFx(Fx);
 					tmp->setGx(state->getGx());
+					tmp->setGameQuadCellsNumber(gqc);
 					tmp->setHx(state->getHx());
 					tmp->parent = this;
 					O.push_back(tmp);
@@ -203,56 +247,63 @@ void State::Expand(std::vector<State*>& O, std::vector<State*>& C, State* target
 
 State::~State()
 {
-	ballsPositions.clear();
+	if (ballsPositions != nullptr)
+	{
+		for (size_t i = 0; i < 5; i++)
+		{
+			delete[] ballsPositions[i];
+		}
+	}
 }
 
 bool State::operator==(const State& rhs) const
 {
-	if (ballsPositions.size() != rhs.ballsPositions.size()) return false;
-	for (size_t i = 0; i < rhs.ballsPositions.size(); i++)
+	if (ballsPositions == nullptr || rhs.ballsPositions == nullptr) return false;
+	for (size_t i = 0; i < 5; i++)
 	{
-		if (ballsPositions[i] != rhs.ballsPositions[i])
-			return false;
+		for (size_t j = 0; j < 5; j++)
+		{
+			if (ballsPositions[i][j] != rhs.ballsPositions[i][j])
+				return false;
+		}
 	}
 	return true;
 }
 bool State::operator!=(const State& rhs) const
 {	
-	if (ballsPositions.size() != rhs.ballsPositions.size()) return true;
-	for (size_t i = 0; i < rhs.ballsPositions.size(); i++)
-	{
-		if (ballsPositions[i] != rhs.ballsPositions[i])
-			return true;
-	}
-	return false;
+	return (!(*this == rhs));
 }
 
 int State::Compare(const State* const rhs) const
 {
 	int counter = 0;
-	for (size_t i = 0; i < ballsPositions.size(); i++)
+	for (size_t i = 0; i < 5; i++)
 	{
-		for (size_t j = 0; j < rhs->ballsPositions.size(); j++)
+		for (size_t j = 0; j < 5; j++)
 		{
-			counter = ballsPositions[i] == rhs->ballsPositions[j] ? counter + 1 : counter;
+			if (ballsPositions[i][j] == rhs->ballsPositions[i][j]
+				&& ballsPositions[i][j] == 1
+				&& rhs->ballsPositions[i][j] == 1)
+			{
+				counter++;
+			}
 		}
 	}
 	
-	return ballsPositions.size() - counter;
+	return 25 - counter;
 }
 
 std::ostream& operator<<(std::ostream& out, const State& state)
 {
-	out << "Balls Positions: ";
-	for (auto& i : state.ballsPositions)
+	out << std::endl;
+	for (size_t i = 0; i < 5; i++)
 	{
-		out << i << "\t";
+		for (size_t j = 0; j < 5; j++)
+		{
+			out << state.ballsPositions[i][j] << ' ';
+		}
+		out << std::endl;
 	}
-	out << std::endl 
-		<< "Length from beginning: " << state.gx << std::endl
-		<< "Heuristics function result: " << state.hx << std::endl
-		<< "f(x) = " << state.fx << std::endl << std::endl;;
-
 	return out;
 }
 
@@ -260,52 +311,113 @@ float CalculateFx(int gx, float hx)
 {
 	return (float)gx + hx;
 }
-
-float heuristic(State* currentState, State* targetState)
+bool findPos(std::vector<pos>& targetFieldBallsPositions, pos& what)
 {
-	float hx = (float)currentState->Compare(targetState) / (currentState->getBallsPositions().size() - (float)currentState->Compare(targetState));
-	return hx;
+	for (size_t i = 0; i < targetFieldBallsPositions.size(); i++)
+	{
+		if (targetFieldBallsPositions[i].i == what.i && targetFieldBallsPositions[i].j == what.j)
+			return true;
+	}
+	return false;
 }
-
-float heuristic2(State* currentState, State* targetState)
+float heuristic(State* currentState, State* targetState)
 {
 	auto targetBallsPositions = targetState->getBallsPositions();
 	auto currentBallsPositions = currentState->getBallsPositions();
 	float distance = std::numeric_limits<float>::max();
 	float hx = 0;
 	float tmp2 = std::numeric_limits<float>::max();
-	for (size_t i = 0; i < currentBallsPositions.size(); i++)
+	std::vector<pos> gameFieldBallsPositions;
+	std::vector<pos> targetFieldBallsPositions;
+	for (size_t i = 0; i < 5; i++)
 	{
-		int hPosSrc = currentBallsPositions[i] % 5;
-		int vPosSrc = currentBallsPositions[i] / 5;
-		bool flag = false;
-		for (size_t j = 0; j < targetBallsPositions.size(); j++)
+		for (size_t j = 0; j < 5; j++)
 		{
-			if (std::find(targetBallsPositions.begin(), targetBallsPositions.end(), currentBallsPositions[i]) == targetBallsPositions.end())
+			if (currentBallsPositions[i][j] == '1')
 			{
-				flag = true;
-				int hPosDest = targetBallsPositions[j] % 5;
-				int vPosDest = targetBallsPositions[j] / 5;
-				float tmp = sqrt(pow(hPosDest - hPosSrc, 2) + pow(vPosDest - vPosSrc, 2));
-				if (tmp2 > tmp)
-				{
-					tmp2 = tmp;
-				}
-				if (tmp < distance)
-				{
-					distance = tmp;
-				}
+				pos p;
+				p.i = i;
+				p.j = j;
+				gameFieldBallsPositions.push_back(p);
 			}
-			else break;
+			if (targetBallsPositions[i][j] == '1')
+			{
+				pos p;
+				p.i = i;
+				p.j = j;
+				targetFieldBallsPositions.push_back(p);
+			}
 		}
-		if (flag == true)
-		{
-			hx += (distance * tmp2);
-			tmp2 = std::numeric_limits<float>::max();
-		}
-		
 	}
-	return hx;
+	float shortest = std::numeric_limits<float>::max();
+	float longest = std::numeric_limits<float>::min();
+	for (size_t i = 0; i < gameFieldBallsPositions.size(); i++)
+	{
+		if (findPos(targetFieldBallsPositions, gameFieldBallsPositions[i]) == false)
+		{
+			float dist = 0;
+			for (size_t j = 0; j < targetFieldBallsPositions.size(); j++)
+			{
+				dist += abs(targetFieldBallsPositions[j].i - gameFieldBallsPositions[i].i) + abs(targetFieldBallsPositions[j].i - gameFieldBallsPositions[i].i);				
+			}
+			hx += dist;
+			shortest = std::numeric_limits<float>::max();
+			longest = std::numeric_limits<float>::min();
+		}
+	}
+	return hx;	
+}
+
+float heuristic2(State* currentState, State* targetState)
+{	
+	auto targetBallsPositions = targetState->getBallsPositions();
+	auto currentBallsPositions = currentState->getBallsPositions();
+	float distance = std::numeric_limits<float>::max();
+	float hx = 0;
+	float tmp2 = std::numeric_limits<float>::max();
+	std::vector<pos> gameFieldBallsPositions;
+	std::vector<pos> targetFieldBallsPositions;
+	for (size_t i = 0; i < 5; i++)
+	{
+		for (size_t j = 0; j < 5; j++)
+		{
+			if (currentBallsPositions[i][j] == '1')
+			{
+				pos p;
+				p.i = i;
+				p.j = j;
+				gameFieldBallsPositions.push_back(p);
+			}
+			if (targetBallsPositions[i][j] == '1')
+			{
+				pos p;
+				p.i = i;
+				p.j = j;
+				targetFieldBallsPositions.push_back(p);
+			}
+		}
+	}
+	float shortest = std::numeric_limits<float>::max();
+	float longest = std::numeric_limits<float>::min();	
+	for (size_t i = 0; i < gameFieldBallsPositions.size(); i++)
+	{
+		if (findPos(targetFieldBallsPositions, gameFieldBallsPositions[i]) == false)
+		{
+			for (size_t j = 0; j < targetFieldBallsPositions.size(); j++)
+			{
+				float dist = sqrt(pow(targetFieldBallsPositions[j].j - gameFieldBallsPositions[i].j, 2)
+					+ pow(targetFieldBallsPositions[j].i - gameFieldBallsPositions[i].i, 2));
+				if (dist < shortest)
+					shortest = dist;
+				if (dist > longest)
+					longest = dist;
+			}
+			hx += shortest * longest;
+			shortest = std::numeric_limits<float>::max();
+			longest = std::numeric_limits<float>::min();
+		}
+	}
+	return hx;	
 }
 
 std::vector<State*>::const_iterator getIterator(std::vector<State*>& V, State* elem)

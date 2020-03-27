@@ -3,7 +3,7 @@
 GameQuad::GameQuad(int fieldWidth, int fieldHeight):fieldHeight(fieldHeight),fieldWidth(fieldWidth)
 {
 	gameQuadCells.setC1(0);
-	gameQuadCells.setC1(1);
+	gameQuadCells.setC2(1);
 	gameQuadCells.setC3(fieldWidth);
 	gameQuadCells.setC4(fieldWidth + 1);
 	horizontalPos = 0;

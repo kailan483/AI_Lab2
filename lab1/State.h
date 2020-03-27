@@ -7,9 +7,10 @@
 #include <ctime>
 #include "GameQuadCells.h"
 #include <functional>
-
+struct pos {
+	int i, j;
+};
 class State;
-
 std::vector<State*>::const_iterator getIterator(std::vector<State*>& V, State* elem);
 float heuristic(State* currentState, State* targetState);
 float heuristic2(State* currentState, State* targetState);
@@ -19,7 +20,7 @@ class State
 {
 private:
 	
-	std::vector<int> ballsPositions;
+	char** ballsPositions = nullptr;
 	State* parent = nullptr;
 	bool Search(std::vector<State*>& v, State* what);
 	bool Repeats(std::vector<State*>& v);
@@ -29,6 +30,8 @@ private:
 	float fx;
 	
 public:
+	static int iterationsCount;
+	void setParent(State* state);
 	void setGx(int gx);
 	void setHx(float hx);
 	float getFx();
@@ -39,10 +42,10 @@ public:
 	GameQuadCells& getGameQuadCellsNumber();
 	void setGameQuadCellsNumber(GameQuadCells gqc);
 	State* getParent() const;
-	State(std::vector<int> ballsPositions, int gx = 0, GameQuadCells gameQuadCells = GameQuadCells());
+	State(char** ballsPositions, int gx = 0, GameQuadCells gameQuadCells = GameQuadCells());
 	State(const State& state);
 	State& operator=(const State& state);
-	std::vector<int>& getBallsPositions();
+	char** getBallsPositions();
 	friend std::ostream& operator<<(std::ostream& out, const State& state);
 	void Expand(std::vector<State*>& O, std::vector<State*>& C, State* targetState, HeuristicFunctionPtr hfPtr);
 	~State();

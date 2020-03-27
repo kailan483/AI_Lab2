@@ -1,7 +1,39 @@
 #include "GameField.h"
+#include <fstream>
+char** ReadFile(std::string filename)
+{
+	char** arr = new char* [5];
+	for (size_t i = 0; i < 5; i++)
+	{
+		arr[i] = new char[5];
+	}
+	std::ifstream is;
+	is.open(filename);
+	char ch;
+	int c = 0;
+	if (is.is_open())
+	{
+		while ((ch = is.get()) != EOF)
+		{
+			if (ch != '\n')
+			{
+				arr[c / 5][c % 5] = ch;
+				c++;
+			}
 
-
-
+		}
+		return arr;
+	}
+	else return nullptr;
+}
+void cleararray(char** arr, int h)
+{
+	for (size_t i = 0; i < h; i++)
+	{
+		delete[] arr[i];
+	}
+	arr = nullptr;
+}
 void Expand(State* parentState, State* targetState, std::vector<State*>& O, std::vector<State*>& C,HeuristicFunctionPtr hfPtr)
 {
 	parentState->Expand(O, C,targetState, hfPtr);
@@ -32,18 +64,47 @@ std::vector<State*>::const_iterator getIteratorOnMinValue(std::vector<State*>& V
 }
 State* Solution(State* startState,State* targetState,HeuristicFunctionPtr hfPtr)
 {
+	State::iterationsCount = 0;
 	using namespace std;
 	vector<State*> O, C;
+	O.reserve(10000);
+	C.reserve(10000);
 	float hx = hfPtr(startState, targetState);
 	startState->setHx(hx);
 	startState->setFx(CalculateFx(startState->getGx(), startState->getHx()));
-	O.push_back(startState);	
+	O.push_back(new State(*startState));	
+	clock_t start = clock();
 	while (!O.empty())
 	{	
-		State* current = *getIteratorOnMinValue(O);			
-		cout << *current;
+		State* current = *getIteratorOnMinValue(O);					
 		if (*current == *targetState)
-			return current;		
+		{
+			clock_t end = clock();
+			double seconds = (double)(end - start) / CLOCKS_PER_SEC;
+			cout << "The time of search is " << seconds << " seconds" << endl;
+			auto tmp = new State(*current);
+			auto tmp2 = current->getParent();
+			auto solution = tmp;
+			while (tmp2->getParent() != nullptr)
+			{
+				tmp->setParent(tmp2);
+				tmp = tmp->getParent();
+				tmp2 = tmp2->getParent();
+			}
+			tmp->setParent(nullptr);
+			for (size_t i = 0; i < O.size(); i++)
+			{
+				delete O[i];
+				O[i] = nullptr;
+			}
+			for (size_t i = 0; i < C.size(); i++)
+			{
+				delete C[i];
+				C[i] = nullptr;
+			}
+			cout << "Iterations count: " << (State::iterationsCount) << endl;
+			return solution;					
+		}
 		O.erase(getIteratorOnMinValue(O));
 		Expand(current,targetState, O, C,hfPtr);
 		if (Search(C,current) == false)
@@ -57,12 +118,19 @@ int main()
 	using namespace std;
 	sf::RenderWindow window(sf::VideoMode(1024, 768), "SFML works!");
 	window.setKeyRepeatEnabled(false);	
-	State* startState = new State(std::vector<int> {1, 2, 3, 6, 11, 16, 8, 13, 19, 17},0,GameQuadCells(0,1,5,6));
-	HeuristicFunctionPtr hfPtr = heuristic;
+
+	char** ballsPositions = ReadFile("gameField.txt");
+	char** targetBallsPositions = ReadFile("target.txt");
+
+	State* startState = new State(ballsPositions,0,GameQuadCells(0,1,5,6));
+	HeuristicFunctionPtr hfPtr = heuristic2;
 	State* gameBeginState = new State(*startState);
 
 	GameQuad* gq = new GameQuad(5, 5);
-	State* targetState = new State(std::vector<int> {1, 2, 3, 6, 11, 16,8,13,18,17});
+	State* targetState = new State(targetBallsPositions);
+
+	cleararray(ballsPositions, 5);
+	cleararray(targetBallsPositions, 5);
 
 	GameField* gf = new GameField(120,80,gq,gameBeginState);		
 	GameField* target = new GameField(560,80,nullptr,targetState);
@@ -127,11 +195,9 @@ int main()
 						
 						states.clear();
 						time = 0;
-						clock_t start = clock();
+
 						State* s = Solution(startState, targetState,hfPtr);
-						clock_t end = clock();
-						double seconds = (double)(end - start) / CLOCKS_PER_SEC;
-						cout << "The time of search is " << seconds << " seconds"<<endl;						
+						
 						if (s == nullptr)
 						{
 							cout << "Solution not found!";
@@ -160,14 +226,14 @@ int main()
 		{
 			if (i > -1)
 			{
-				if (time > 2000 && !moveQuad)
+				if (time > 500 && !moveQuad)
 				{
 					gf->setGameQuadCells(states[i]->getGameQuadCellsNumber());
 					gf->getState()->setGameQuadCellsNumber(states[i]->getGameQuadCellsNumber());
 					moveQuad = true;
 					changeBallsPositions = false;
 				}
-				if (time > 4000 && !changeBallsPositions)
+				if (time > 1000 && !changeBallsPositions)
 				{
 					gf->setBallsPositions(states[i]->getBallsPositions());			
 					time = 0;
